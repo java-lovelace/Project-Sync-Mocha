@@ -1,61 +1,52 @@
 package com.mocha.projectsyncmocha.controllers;
 
+import com.mocha.projectsyncmocha.dtos.ProjectDto;
+import com.mocha.projectsyncmocha.dtos.ProjectRequestDto;
 import com.mocha.projectsyncmocha.models.Project;
 import com.mocha.projectsyncmocha.repositories.ProjectRepository;
+import com.mocha.projectsyncmocha.services.ProjectService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/projects")
 @CrossOrigin(origins = "*")
 public class ProjectController {
-    private final ProjectRepository repo;
+    private final ProjectService service;
 
-    public ProjectController(ProjectRepository repo) {
-        this.repo = repo;
+    public ProjectController(ProjectRepository repo, ProjectService service) {
+        this.service = service;
     }
 
     @GetMapping
-    public List<Project> getAll(){
-        return repo.findAll();
+    public List<ProjectDto> getAll(){
+        return service.getAll();
     }
 
     @GetMapping("{id}")
-    public Optional<Project> getProject(@PathVariable Long id){
-        return repo.findById(id);
+    public ProjectDto getProject(@PathVariable Long id){
+        return service.getById(id);
     }
 
     @PostMapping
-    public Project save(@RequestBody Project project){
-        return repo.save(project);
+    public ProjectDto save(@RequestBody ProjectRequestDto project){
+        return service.create(project);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Project> updateProject(
+    public ResponseEntity<ProjectDto> updateProject(
             @PathVariable Long id,
-            @RequestBody Project projectDetails) {
+            @RequestBody ProjectRequestDto projectDetails) {
 
-        return repo.findById(id)
-                .map(project -> {
-                    if (projectDetails.getName() != null)
-                        project.setName(projectDetails.getName());
-                    if (projectDetails.getDescription() != null)
-                        project.setDescription(projectDetails.getDescription());
-                    if (projectDetails.getStatus() != null)
-                        project.setStatus(projectDetails.getStatus());
-                    if (projectDetails.getResponsible() != null)
-                        project.setResponsible(projectDetails.getResponsible());
-                    project = repo.save(project);
-                    return ResponseEntity.ok(project);
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+            ProjectDto updated = service.updatePartial(id, projectDetails);
+            return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id){
-        repo.deleteById(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id){
+        service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
